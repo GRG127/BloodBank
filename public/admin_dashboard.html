@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Bank Management System - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #3498db;
+            font-weight: bold;
+            font-size: 2.5em; /* Increase font size for emphasis */
+            margin-bottom: 20px; /* Add more space below the heading for clarity */
+            padding: 10px; /* Add padding for better readability */
+        }
+
+        p {
+            color: #ecf0f1; /* Slightly different color for variety */
+            font-size: 1.2em; /* Increase font size for emphasis */
+            margin-bottom: 20px; /* Add space below the paragraph */
+            padding: 10px; /* Add padding for better readability */
+        }
+
+        #adminMessages,
+        #registeredUsers,
+        #BloodRequestsListForAdmin,
+        div {
+            margin: 20px;
+            padding: 20px;
+            background-color: rgb(241, 189, 189);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(43, 42, 42, 0.1);
+        }
+
+        button {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #fb2111;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 5px 0;
+        }
+        #donorsList img {
+            max-width: 100px; /* Adjust the maximum width as needed */
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        #registeredUsers {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #donorsList {
+            flex: 1;
+            margin-right: 20px; /* Adjust margin as needed for spacing between columns */
+            background-color: #f3f2f2;
+        }
+
+        #donorsList img {
+            max-width: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        #patientsList {
+            flex: 1;
+            color: #1f6fa5;
+            background-color: azure;
+        }
+        h3 {
+            color: rgb(120, 154, 250); /* Text color for the column headings */
+        }
+        .user-card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-info {
+            flex: 1;
+        }
+        .user-actions {
+            margin-left: 15px;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="logo">BloodBank</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="donor_login.html">Donor</a>
+                <a href="patient_login.html">Patient</a>
+                <a href="admin.html">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 100px;">
+        <div class="card fade-in">
+            <h1 style="text-align: center; color: var(--primary-color); margin-bottom: 2rem;">Admin Dashboard</h1>
+            
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h2>Registered Donors</h2>
+                    <div id="donorsList">
+                        <ul id="donorsDetailsList"></ul>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Registered Patients</h2>
+                    <div id="patientsList">
+                        <ul id="patientsDetailsList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h2>Blood Requests</h2>
+                <div id="BloodRequestsListForAdmin">
+                    <ul id="bloodRequestsListAdmin"></ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h2>Admin Actions</h2>
+                <div class="dashboard-grid">
+                    <button onclick="grantUserPermission()" class="btn btn-primary">Grant User Permission</button>
+                    <button onclick="respondToRequest()" class="btn btn-secondary">Respond to Requests</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Initialize the dashboard when the page loads
+        window.addEventListener('load', async () => {
+            try {
+                // Initialize Web3 if not already done
+                if (!web3 || !bloodBankContract) {
+                    await initWeb3();
+                }
+                
+                // Display registered users
+                await displayRegisteredUsers();
+                
+                // Display blood requests
+                await displayBloodRequests('bloodRequestsListAdmin');
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                alert('Error loading dashboard. Please check console for details.');
+            }
+        });
+
+        // Function to display registered users
+        async function displayRegisteredUsers() {
+            try {
+                const { registeredDonors, registeredPatients } = await bloodBankContract.methods.getRegisteredUsers().call();
+
+                // Display donors
+                const donorsList = document.getElementById('donorsDetailsList');
+                donorsList.innerHTML = '';
+                for (const donorAddress of registeredDonors) {
+                    const donorDetails = await bloodBankContract.methods.donors(donorAddress).call();
+                    const isAllowed = await bloodBankContract.methods.isDonorAllowed(donorAddress).call();
+                    
+                    const listItem = document.createElement('li');
+                    listItem.className = 'user-card';
+                    listItem.innerHTML = `
+                        <div class="user-info">
+                            <strong>${donorDetails.name}</strong>
+                            <br>
+                            <small>Address: ${donorAddress}</small>
+                            <br>
+                            <small>Blood Type: ${donorDetails.bloodType}</small>
+                        </div>
+                        <div class="user-actions">
+                            <span class="status-badge ${isAllowed ? 'status-approved' : 'status-pending'}">
+                                ${isAllowed ? 'Approved' : 'Pending'}
+                            </span>
+                        </div>
+                    `;
+                    donorsList.appendChild(listItem);
+                }
+
+                // Display patients
+                const patientsList = document.getElementById('patientsDetailsList');
+                patientsList.innerHTML = '';
+                for (const patientAddress of registeredPatients) {
+                    const patientDetails = await bloodBankContract.methods.patients(patientAddress).call();
+                    const isAllowed = await bloodBankContract.methods.isPatientAllowed(patientAddress).call();
+                    
+                    const listItem = document.createElement('li');
+                    listItem.className = 'user-card';
+                    listItem.innerHTML = `
+                        <div class="user-info">
+                            <strong>${patientDetails.name}</strong>
+                            <br>
+                            <small>Address: ${patientAddress}</small>
+                            <br>
+                            <small>Blood Type: ${patientDetails.bloodType}</small>
+                        </div>
+                        <div class="user-actions">
+                            <span class="status-badge ${isAllowed ? 'status-approved' : 'status-pending'}">
+                                ${isAllowed ? 'Approved' : 'Pending'}
+                            </span>
+                        </div>
+                    `;
+                    patientsList.appendChild(listItem);
+                }
+            } catch (error) {
+                console.error('Error displaying registered users:', error);
+                alert('Error loading user list. Please check console for details.');
+            }
+        }
+    </script>
+</body>
+</html>
